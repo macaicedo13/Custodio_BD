@@ -1,0 +1,65 @@
+﻿services:
+  sqlserver_lab_1:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver_lab_1
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "SqlServer2026!Lab"
+      MSSQL_SA_PASSWORD: "SqlServer2026!Lab"
+      MSSQL_PID: "Developer"
+    ports:
+      - "56964:1433"
+    volumes:
+      - sqlserver_lab_1_data:/var/opt/mssql
+      - sqlserver_lab_shared_backups:/var/opt/mssql/shared
+
+  sqlserver_lab_2:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver_lab_2
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "SqlServer2026!Lab"
+      MSSQL_SA_PASSWORD: "SqlServer2026!Lab"
+      MSSQL_PID: "Developer"
+    ports:
+      - "43123:1433"
+    volumes:
+      - sqlserver_lab_2_data:/var/opt/mssql
+      - sqlserver_lab_shared_backups:/var/opt/mssql/shared
+
+  sqlserver_lab_3:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver_lab_3
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "SqlServer2026!Lab"
+      MSSQL_SA_PASSWORD: "SqlServer2026!Lab"
+      MSSQL_PID: "Developer"
+    ports:
+      - "52789:1433"
+    volumes:
+      - sqlserver_lab_3_data:/var/opt/mssql
+      - sqlserver_lab_shared_backups:/var/opt/mssql/shared
+
+  DBCUSTODIO:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: DBCUSTODIO
+    hostname: DBCUSTODIO
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "SqlServer2026!Lab"
+      MSSQL_SA_PASSWORD: "SqlServer2026!Lab"
+      MSSQL_PID: "Developer"
+    ports:
+      - "55432:1433"
+    volumes:
+      - DBCUSTODIO_data:/var/opt/mssql
+      - sqlserver_lab_shared_backups:/var/opt/mssql/shared
+    user: "0:0"   # corre como root para poder escribir en el volumen compartido
+
+volumes:
+  sqlserver_lab_1_data:
+  sqlserver_lab_2_data:
+  sqlserver_lab_3_data:
+  DBCUSTODIO_data:
+  sqlserver_lab_shared_backups:
