@@ -10,12 +10,13 @@ Flujo:
   4. Imprimir resumen final.
 
 Ejecucion:
-  python main.py              # ejecucion normal
-  python main.py --dry-run    # simulacion (no aplica SET OFFLINE)
+  python main.py
 
-El modo dry-run tambien puede activarse con la variable de entorno
-DRY_RUN=1 en el .env. La flag --dry-run siempre prevalece sobre la
-variable de entorno.
+Modo dry-run (simulacion):
+  Se activa estableciendo DRY_RUN=1 en el archivo .env.
+  En ese modo no se aplica SET OFFLINE ni se modifica INVENTARIO_BASES;
+  solo se registra el evento CADUCAMIENTO_SIMULADO en HISTORIAL_BASES.
+  Para volver a ejecucion normal: DRY_RUN=0.
 
 Programacion (Task Scheduler de Windows):
   Programa : python.exe
@@ -24,7 +25,6 @@ Programacion (Task Scheduler de Windows):
   Hora      : 02:00 AM diario
 """
 
-import argparse
 import sys
 from datetime import datetime
 
@@ -60,28 +60,26 @@ def obtener_instancias(san_conn) -> list[dict]:
     return [dict(zip(cols, row)) for row in cursor.fetchall()]
 
 
+def _imprimir_banner_dry_run() -> None:
+    """Banner visible para evitar olvidos cuando DRY_RUN quedo en 1."""
+    log.warning("*" * 60)
+    log.warning("***  MODO DRY-RUN ACTIVO - SIMULACION                   ***")
+    log.warning("***  No se aplicara SET OFFLINE.                        ***")
+    log.warning("***  No se modificara INVENTARIO_BASES.                 ***")
+    log.warning("***  Para desactivar: DRY_RUN=0 en .env                 ***")
+    log.warning("*" * 60)
+
+
 def main():
-    parser = argparse.ArgumentParser(
-        description="Custodio - proceso nocturno de caducidad de BDs."
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Simula sin aplicar SET OFFLINE ni actualizar inventario. "
-             "Registra CADUCAMIENTO_SIMULADO en HISTORIAL_BASES."
-    )
-    args = parser.parse_args()
-
-    # CLI prevalece sobre la variable de entorno DRY_RUN
-    dry_run = args.dry_run or config.DRY_RUN
-
+    dry_run = config.DRY_RUN
     inicio = datetime.now()
-    cabecera_modo = "  [MODO DRY-RUN]" if dry_run else ""
-    log.info("=" * 60)
-    log.info(f"INICIO DEL PROCESO DE CADUCIDAD{cabecera_modo}")
-    log.info(f"Fecha/Hora : {inicio.strftime('%Y-%m-%d %H:%M:%S')}")
+
     if dry_run:
-        log.info("Modo dry-run activo: no se aplicara SET OFFLINE.")
+        _imprimir_banner_dry_run()
+
+    log.info("=" * 60)
+    log.info("INICIO DEL PROCESO DE CADUCIDAD")
+    log.info(f"Fecha/Hora : {inicio.strftime('%Y-%m-%d %H:%M:%S')}")
     log.info("=" * 60)
 
     resumen_global = {
@@ -161,10 +159,9 @@ def main():
     fin      = datetime.now()
     duracion = (fin - inicio).seconds
 
-    sufijo_resumen = "  [DRY-RUN]" if dry_run else ""
-    etiqueta_cad   = "BDs simuladas (sin OFFLINE)" if dry_run else "BDs caducadas (OFFLINE)    "
+    etiqueta_cad = "BDs simuladas (sin OFFLINE)" if dry_run else "BDs caducadas (OFFLINE)    "
     log.info("=" * 60)
-    log.info(f"RESUMEN FINAL{sufijo_resumen}")
+    log.info("RESUMEN FINAL")
     log.info(f"Duracion                    : {duracion} segundos")
     log.info(f"Instancias procesadas       : {resumen_global['instancias_procesadas']}")
     log.info(f"Instancias con error        : {resumen_global['instancias_error']}")
@@ -174,6 +171,9 @@ def main():
     log.info(f"{etiqueta_cad} : {resumen_global['bds_caducadas']}")
     log.info(f"Errores de caducidad        : {resumen_global['errores_caducidad']}")
     log.info("=" * 60)
+
+    if dry_run:
+        _imprimir_banner_dry_run()
 
     # Codigo de salida: 0 = OK, 1 = hubo errores (util para Task Scheduler)
     if resumen_global["instancias_error"] > 0 or resumen_global["errores_caducidad"] > 0:

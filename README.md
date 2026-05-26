@@ -49,26 +49,37 @@ sin aplicar realmente el `SET OFFLINE`. Útil para validar cambios en el lab,
 probar en un nuevo entorno antes de programar el job nocturno, o generar un
 reporte previo de impacto.
 
-**En modo dry-run, Custodio:**
-- Sincroniza el inventario normalmente (operación de solo lectura sobre destino).
-- NO ejecuta `ALTER DATABASE ... SET OFFLINE`.
-- NO actualiza `INVENTARIO_BASES` con estado `CADUCADA`.
-- Registra cada caso con la marca `[DRY-RUN]` en el log.
-- Inserta un evento `CADUCAMIENTO_SIMULADO` en `noprod.HISTORIAL_BASES`
-  con el mismo JSON que `CADUCAMIENTO_APLICADO` más el flag `"simulado": true`,
-  dejando trazabilidad de cada simulación.
-
-**Activación por CLI (prevalece sobre la variable de entorno):**
-
-```powershell
-python main.py --dry-run
-```
-
-**Activación por variable de entorno (`.env` o `.env.lab`):**
+**Activación:** establecer `DRY_RUN=1` en el archivo `.env` (o `.env.lab`).
+Para volver a ejecución normal: `DRY_RUN=0`.
 
 ```env
 DRY_RUN=1
 ```
+
+```powershell
+python main.py
+```
+
+Al iniciar y al finalizar el proceso, Custodio imprime un banner llamativo
+en consola y log para que el modo simulación nunca pase desapercibido:
+
+```
+************************************************************
+***  MODO DRY-RUN ACTIVO - SIMULACION                   ***
+***  No se aplicara SET OFFLINE.                        ***
+***  No se modificara INVENTARIO_BASES.                 ***
+***  Para desactivar: DRY_RUN=0 en .env                 ***
+************************************************************
+```
+
+**En modo dry-run, Custodio:**
+- Sincroniza el inventario normalmente (operación de solo lectura sobre destino).
+- NO ejecuta `ALTER DATABASE ... SET OFFLINE`.
+- NO actualiza `INVENTARIO_BASES` con estado `CADUCADA`.
+- Marca cada línea relevante en el log con `[DRY-RUN]`.
+- Inserta un evento `CADUCAMIENTO_SIMULADO` en `noprod.HISTORIAL_BASES`
+  con el mismo JSON que `CADUCAMIENTO_APLICADO` más el flag `"simulado": true`,
+  dejando trazabilidad de cada simulación.
 
 **Verificar resultados de una simulación:**
 
@@ -129,6 +140,9 @@ DEST_PASSWORD=
 CONN_TIMEOUT=30
 LOG_RETENTION_DAYS=90
 LOG_DIR=logs
+
+# Modo simulación: 1 = no aplica SET OFFLINE, 0 = ejecución normal
+DRY_RUN=0
 ```
 
 Para apuntar a un entorno distinto sin modificar `.env`, usar la variable `ENV_FILE`:
@@ -169,13 +183,13 @@ python prorrogar.py `
 ### Escenario 1 — Caducamiento automático
 
 Una base con `Fecha_Expiracion` vencida pasa a `OFFLINE` al correr el proceso.
-Recomendado: validar primero en modo simulación.
+Recomendado: validar primero en modo simulación (`DRY_RUN=1` en `.env`).
 
 ```powershell
-# 1. Simular: ver qué bases se caducarían sin aplicar cambios
-python main.py --dry-run
+# 1. Simular (con DRY_RUN=1 en .env): no aplica cambios, solo registra
+python main.py
 
-# 2. Ejecutar de verdad
+# 2. Cambiar DRY_RUN=0 en .env y ejecutar de verdad
 python main.py
 ```
 

@@ -62,5 +62,5 @@ LOG_DIR             = os.getenv("LOG_DIR", "logs")
 # --- Modo dry-run (simulacion) ---
 # Si esta activo, Custodio NO ejecuta SET OFFLINE ni cambia el inventario,
 # pero si registra en HISTORIAL_BASES el evento CADUCAMIENTO_SIMULADO.
-# La flag --dry-run en CLI siempre prevalece sobre esta variable.
+# Se controla unicamente desde el .env. Para volver a ejecucion normal: DRY_RUN=0.
 DRY_RUN = os.getenv("DRY_RUN", "0").strip().lower() in ("1", "true", "yes", "on")
