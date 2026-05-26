@@ -461,6 +461,7 @@ BEGIN
           BD_DESCUBIERTA          Primera vez detectada
           ETIQUETAS_ACTUALIZADAS  Cambio en estado, caso o fecha
           CADUCAMIENTO_APLICADO   BD puesta OFFLINE por vencimiento
+          CADUCAMIENTO_SIMULADO   Dry-run: hubiera sido caducada
           PRORROGA_REGISTRADA     DBA registro prorroga con prorrogar.py
           REACTIVACION            BD traida de OFFLINE a ONLINE
           BD_DESAPARECIDA         Ya no existe en el servidor
@@ -477,9 +478,10 @@ BEGIN
         CONSTRAINT CK_HISTORIAL_BASES_TipoEvento
             CHECK (TipoEvento IN (
                 'BD_DESCUBIERTA',        'ETIQUETAS_ACTUALIZADAS',
-                'CADUCAMIENTO_APLICADO', 'PRORROGA_REGISTRADA',
-                'REACTIVACION',          'BD_DESAPARECIDA',
-                'ERROR_CONEXION',        'ERROR_OPERACION'
+                'CADUCAMIENTO_APLICADO', 'CADUCAMIENTO_SIMULADO',
+                'PRORROGA_REGISTRADA',   'REACTIVACION',
+                'BD_DESAPARECIDA',       'ERROR_CONEXION',
+                'ERROR_OPERACION'
             )),
 
         CONSTRAINT CK_HISTORIAL_BASES_Status

@@ -58,3 +58,9 @@ DEST_PASSWORD = _requerir("DEST_PASSWORD")
 CONN_TIMEOUT        = int(os.getenv("CONN_TIMEOUT", "30"))
 LOG_RETENTION_DAYS  = int(os.getenv("LOG_RETENTION_DAYS", "90"))
 LOG_DIR             = os.getenv("LOG_DIR", "logs")
+
+# --- Modo dry-run (simulacion) ---
+# Si esta activo, Custodio NO ejecuta SET OFFLINE ni cambia el inventario,
+# pero si registra en HISTORIAL_BASES el evento CADUCAMIENTO_SIMULADO.
+# La flag --dry-run en CLI siempre prevalece sobre esta variable.
+DRY_RUN = os.getenv("DRY_RUN", "0").strip().lower() in ("1", "true", "yes", "on")

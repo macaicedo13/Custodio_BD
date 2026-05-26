@@ -10,7 +10,12 @@ Flujo:
   4. Imprimir resumen final.
 
 Ejecucion:
-  python main.py
+  python main.py              # ejecucion normal
+  python main.py --dry-run    # simulacion (no aplica SET OFFLINE)
+
+El modo dry-run tambien puede activarse con la variable de entorno
+DRY_RUN=1 en el .env. La flag --dry-run siempre prevalece sobre la
+variable de entorno.
 
 Programacion (Task Scheduler de Windows):
   Programa : python.exe
@@ -19,9 +24,11 @@ Programacion (Task Scheduler de Windows):
   Hora      : 02:00 AM diario
 """
 
+import argparse
 import sys
 from datetime import datetime
 
+import config
 from db import conectar_sanitizacion
 from inventario import sincronizar_instancia
 from caducidad import procesar_caducidades
@@ -54,10 +61,27 @@ def obtener_instancias(san_conn) -> list[dict]:
 
 
 def main():
+    parser = argparse.ArgumentParser(
+        description="Custodio - proceso nocturno de caducidad de BDs."
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Simula sin aplicar SET OFFLINE ni actualizar inventario. "
+             "Registra CADUCAMIENTO_SIMULADO en HISTORIAL_BASES."
+    )
+    args = parser.parse_args()
+
+    # CLI prevalece sobre la variable de entorno DRY_RUN
+    dry_run = args.dry_run or config.DRY_RUN
+
     inicio = datetime.now()
+    cabecera_modo = "  [MODO DRY-RUN]" if dry_run else ""
     log.info("=" * 60)
-    log.info("INICIO DEL PROCESO DE CADUCIDAD")
+    log.info(f"INICIO DEL PROCESO DE CADUCIDAD{cabecera_modo}")
     log.info(f"Fecha/Hora : {inicio.strftime('%Y-%m-%d %H:%M:%S')}")
+    if dry_run:
+        log.info("Modo dry-run activo: no se aplicara SET OFFLINE.")
     log.info("=" * 60)
 
     resumen_global = {
@@ -110,20 +134,22 @@ def main():
                     log.error(f"[{nombre}] No se pudo conectar. Ver log para detalles.")
 
             # --- Paso 3: Aplicar caducidades ---
+            sufijo_paso = "  [SIMULACION - no se aplicara OFFLINE]" if dry_run else ""
             log.info("-" * 60)
-            log.info("PASO 2: Aplicando caducidades")
+            log.info(f"PASO 2: Aplicando caducidades{sufijo_paso}")
             log.info("-" * 60)
 
-            resumen_cad = procesar_caducidades(san_conn)
+            resumen_cad = procesar_caducidades(san_conn, dry_run=dry_run)
             resumen_global["bds_caducadas"]     = resumen_cad["aplicadas"]
             resumen_global["errores_caducidad"] = resumen_cad["errores"]
 
             if resumen_cad["total"] == 0:
                 log.info("Sin BDs vencidas para caducar.")
             else:
+                etiqueta = "Simuladas" if dry_run else "Caducadas"
                 log.info(
                     f"Vencidas encontradas: {resumen_cad['total']} | "
-                    f"Caducadas: {resumen_cad['aplicadas']} | "
+                    f"{etiqueta}: {resumen_cad['aplicadas']} | "
                     f"Errores: {resumen_cad['errores']}"
                 )
 
@@ -135,16 +161,18 @@ def main():
     fin      = datetime.now()
     duracion = (fin - inicio).seconds
 
+    sufijo_resumen = "  [DRY-RUN]" if dry_run else ""
+    etiqueta_cad   = "BDs simuladas (sin OFFLINE)" if dry_run else "BDs caducadas (OFFLINE)    "
     log.info("=" * 60)
-    log.info("RESUMEN FINAL")
-    log.info(f"Duracion               : {duracion} segundos")
-    log.info(f"Instancias procesadas  : {resumen_global['instancias_procesadas']}")
-    log.info(f"Instancias con error   : {resumen_global['instancias_error']}")
-    log.info(f"BDs sincronizadas      : {resumen_global['bds_procesadas']}")
-    log.info(f"BDs nuevas detectadas  : {resumen_global['bds_nuevas']}")
-    log.info(f"BDs con alerta         : {resumen_global['bds_alertas']}")
-    log.info(f"BDs caducadas (OFFLINE): {resumen_global['bds_caducadas']}")
-    log.info(f"Errores de caducidad   : {resumen_global['errores_caducidad']}")
+    log.info(f"RESUMEN FINAL{sufijo_resumen}")
+    log.info(f"Duracion                    : {duracion} segundos")
+    log.info(f"Instancias procesadas       : {resumen_global['instancias_procesadas']}")
+    log.info(f"Instancias con error        : {resumen_global['instancias_error']}")
+    log.info(f"BDs sincronizadas           : {resumen_global['bds_procesadas']}")
+    log.info(f"BDs nuevas detectadas       : {resumen_global['bds_nuevas']}")
+    log.info(f"BDs con alerta              : {resumen_global['bds_alertas']}")
+    log.info(f"{etiqueta_cad} : {resumen_global['bds_caducadas']}")
+    log.info(f"Errores de caducidad        : {resumen_global['errores_caducidad']}")
     log.info("=" * 60)
 
     # Codigo de salida: 0 = OK, 1 = hubo errores (util para Task Scheduler)

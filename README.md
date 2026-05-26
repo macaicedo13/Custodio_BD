@@ -42,6 +42,45 @@ correspondiente y actualiza el inventario a `CADUCADA`.
 
 ---
 
+## Modo dry-run (simulación)
+
+Custodio puede ejecutarse en modo simulación para validar qué bases se caducarían
+sin aplicar realmente el `SET OFFLINE`. Útil para validar cambios en el lab,
+probar en un nuevo entorno antes de programar el job nocturno, o generar un
+reporte previo de impacto.
+
+**En modo dry-run, Custodio:**
+- Sincroniza el inventario normalmente (operación de solo lectura sobre destino).
+- NO ejecuta `ALTER DATABASE ... SET OFFLINE`.
+- NO actualiza `INVENTARIO_BASES` con estado `CADUCADA`.
+- Registra cada caso con la marca `[DRY-RUN]` en el log.
+- Inserta un evento `CADUCAMIENTO_SIMULADO` en `noprod.HISTORIAL_BASES`
+  con el mismo JSON que `CADUCAMIENTO_APLICADO` más el flag `"simulado": true`,
+  dejando trazabilidad de cada simulación.
+
+**Activación por CLI (prevalece sobre la variable de entorno):**
+
+```powershell
+python main.py --dry-run
+```
+
+**Activación por variable de entorno (`.env` o `.env.lab`):**
+
+```env
+DRY_RUN=1
+```
+
+**Verificar resultados de una simulación:**
+
+```sql
+SELECT FechaEvento, ID_Instancia, DatabaseName, Detalle
+FROM noprod.HISTORIAL_BASES
+WHERE TipoEvento = 'CADUCAMIENTO_SIMULADO'
+ORDER BY FechaEvento DESC;
+```
+
+---
+
 ## Extended properties que Custodio lee
 
 Custodio lee estas propiedades extendidas a nivel de base de datos en cada instancia destino:
@@ -129,9 +168,14 @@ python prorrogar.py `
 
 ### Escenario 1 — Caducamiento automático
 
-Una base con `Fecha_Expiracion` vencida pasa a `OFFLINE` al correr el proceso:
+Una base con `Fecha_Expiracion` vencida pasa a `OFFLINE` al correr el proceso.
+Recomendado: validar primero en modo simulación.
 
 ```powershell
+# 1. Simular: ver qué bases se caducarían sin aplicar cambios
+python main.py --dry-run
+
+# 2. Ejecutar de verdad
 python main.py
 ```
 
