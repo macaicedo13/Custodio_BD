@@ -3,7 +3,7 @@
 $SaPassword = "SqlServer2026!Lab"
 $Server = "localhost,55432"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$DbSanDir = Join-Path $ScriptDir "scripts\DBCUSTODIO"
+$DbSanDir = Join-Path $ScriptDir "scripts\dbsanitizacion"
 $PreLogins = Join-Path $DbSanDir "00_precrear_logins_lab.sql"
 $OriginalScript = Join-Path $DbSanDir "05_Caducidad_Tablas.sql"
 $PostPermisos = Join-Path $DbSanDir "99_post_permisos_dbsanitizacion.sql"

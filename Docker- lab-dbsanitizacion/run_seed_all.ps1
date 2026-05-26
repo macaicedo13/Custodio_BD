@@ -27,10 +27,10 @@ function Invoke-SqlFile {
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $CreateSvcScript = Join-Path $Root "scripts\crear_svc_caducidad_destino.sql"
 $CreateDbaScript = Join-Path $Root "scripts\crear_dba_sysadmin_destino.sql"
-$SeedDBCUSTODIO = Join-Path $Root "scripts\DBCUSTODIO\10_seed_origen_etiquetar_backup.sql"
+$SeedDBCUSTODIO = Join-Path $Root "scripts\dbsanitizacion\10_seed_origen_etiquetar_backup.sql"
 $SeedLabScript = Join-Path $Root "scripts\seed_lab_distribuido.sql"
 $ValidateLabScript = Join-Path $Root "scripts\validar_lab.sql"
-$ValidateDBCUSTODIO = Join-Path $Root "scripts\DBCUSTODIO\validar_dbsanitizacion.sql"
+$ValidateDBCUSTODIO = Join-Path $Root "scripts\dbsanitizacion\validar_dbsanitizacion.sql"
 
 Write-Host "============================================================" -ForegroundColor Yellow
 Write-Host "1) Generar BDs origen en DBCUSTODIO, etiquetar con SP y crear backups" -ForegroundColor Yellow
