@@ -30,6 +30,16 @@
 ============================================================================= */
 
 /* =============================================================================
+   SET options requeridos para indices filtrados, vistas indexadas
+   y consistencia entre la creacion del script y los stored procedures.
+   sqlcmd por defecto trae QUOTED_IDENTIFIER OFF; al forzarlo aqui se
+   evita el error 1934 (CREATE INDEX failed... QUOTED_IDENTIFIER).
+============================================================================= */
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+GO
+
+/* =============================================================================
    PASO 00 - CREAR BASE DE DATOS dbdba
 ============================================================================= */
 USE [master];
@@ -722,8 +732,10 @@ BEGIN
 
     IF @encryption_state = 1
     BEGIN
-        PRINT 'Aplicando SET ENCRYPTION OFF a [' + DB_NAME() + ']...';
-        EXEC('ALTER DATABASE [' + DB_NAME() + '] SET ENCRYPTION OFF');
+        DECLARE @db_actual sysname        = DB_NAME();
+        DECLARE @sql_alter nvarchar(max)  = N'ALTER DATABASE ' + QUOTENAME(@db_actual) + N' SET ENCRYPTION OFF';
+        PRINT 'Aplicando SET ENCRYPTION OFF a [' + @db_actual + ']...';
+        EXEC sp_executesql @sql_alter;
         PRINT 'SET ENCRYPTION OFF aplicado. El descifrado puede tomar varios minutos.';
         PRINT 'Verificar progreso: EXEC noprod.SP_REMOCION_TDE'; RETURN;
     END;
